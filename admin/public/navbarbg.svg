@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 440" role="img" aria-label="Pink star grid background">
+  <defs>
+    <linearGradient id="pink" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#efb0cd"/>
+      <stop offset="0.52" stop-color="#f4c2d8"/>
+      <stop offset="1" stop-color="#f9e2e8"/>
+    </linearGradient>
+    <pattern id="grid" width="72" height="58" patternUnits="userSpaceOnUse">
+      <path d="M0 29 C18 18 39 40 72 27 M36 0 C28 18 45 38 36 58" fill="none" stroke="#fff8fb" stroke-opacity=".62" stroke-width="1.2"/>
+    </pattern>
+    <filter id="soften">
+      <feGaussianBlur stdDeviation=".35"/>
+    </filter>
+  </defs>
+  <rect width="740" height="440" fill="url(#pink)"/>
+  <rect width="740" height="440" fill="url(#grid)" filter="url(#soften)"/>
+  <g fill="#fffdfd" opacity=".88">
+    <path d="M58 54l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"/>
+    <path d="M208 185l3 10 10 3-10 3-3 10-3-10-10-3 10-3z"/>
+    <path d="M366 22l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"/>
+    <path d="M533 113l3 10 10 3-10 3-3 10-3-10-10-3 10-3z"/>
+    <path d="M640 335l3 10 10 3-10 3-3 10-3-10-10-3 10-3z"/>
+    <path d="M122 360l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"/>
+  </g>
+  <g fill="#fffdfd" opacity=".68">
+    <circle cx="290" cy="74" r="2"/><circle cx="462" cy="278" r="2"/><circle cx="680" cy="188" r="2"/><circle cx="84" cy="282" r="2"/><circle cx="575" cy="54" r="2"/>
+  </g>
+</svg>

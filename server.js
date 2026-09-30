@@ -8,7 +8,30 @@ dotenv.config()
 const app = express()
 
 // Middleware
-app.use(cors())
+const corsOrigins = new Set(
+  (process.env.CORS_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+)
+
+app.use(cors({
+  origin(origin, callback) {
+    const isDevelopmentWithoutAllowlist =
+      process.env.NODE_ENV !== 'production' &&
+      corsOrigins.size === 0
+
+    if (
+      !origin ||
+      corsOrigins.has(origin) ||
+      isDevelopmentWithoutAllowlist
+    ) {
+      return callback(null, true)
+    }
+
+    callback(new Error('Origin is not allowed by CORS'))
+  },
+}))
 app.use(express.json())
 
 // --------------------------------------------------
@@ -36,6 +59,46 @@ const supabase = createClient(
 )
 
 console.log('✅ Supabase client initialized')
+
+const adminEmails = new Set(
+  (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean)
+)
+
+async function requireAdmin(req, res, next) {
+  const authorization = req.get('authorization') || ''
+  const accessToken = authorization.startsWith('Bearer ')
+    ? authorization.slice(7)
+    : ''
+
+  if (!accessToken) {
+    return res.status(401).json({ error: 'Authentication required' })
+  }
+
+  if (adminEmails.size === 0) {
+    return res.status(503).json({ error: 'Admin access is not configured' })
+  }
+
+  try {
+    const { data, error } = await supabase.auth.getUser(accessToken)
+
+    if (error || !data.user) {
+      return res.status(401).json({ error: 'Invalid or expired session' })
+    }
+
+    if (!adminEmails.has((data.user.email || '').toLowerCase())) {
+      return res.status(403).json({ error: 'Admin access denied' })
+    }
+
+    req.adminUser = data.user
+    next()
+  } catch (error) {
+    console.error('Admin authentication error:', error)
+    res.status(401).json({ error: 'Unable to verify admin session' })
+  }
+}
 
 // --------------------------------------------------
 // BOOKING / TIME HELPERS
@@ -152,7 +215,7 @@ function timesOverlap(
 // GET ALL RESERVATIONS
 // --------------------------------------------------
 
-app.get('/api/reservations', async (req, res) => {
+app.get('/api/reservations', requireAdmin, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('reservations')
@@ -182,7 +245,7 @@ app.get('/api/reservations', async (req, res) => {
 // GET SINGLE RESERVATION
 // --------------------------------------------------
 
-app.get('/api/reservations/:id', async (req, res) => {
+app.get('/api/reservations/:id', requireAdmin, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('reservations')
@@ -477,7 +540,7 @@ app.post('/api/reservations', async (req, res) => {
 // UPDATE RESERVATION
 // --------------------------------------------------
 
-app.put('/api/reservations/:id', async (req, res) => {
+app.put('/api/reservations/:id', requireAdmin, async (req, res) => {
   try {
     const { status, admin_notes } = req.body
 
@@ -542,7 +605,7 @@ app.put('/api/reservations/:id', async (req, res) => {
 // DELETE RESERVATION
 // --------------------------------------------------
 
-app.delete('/api/reservations/:id', async (req, res) => {
+app.delete('/api/reservations/:id', requireAdmin, async (req, res) => {
   try {
     const { error } = await supabase
       .from('reservations')
@@ -573,7 +636,7 @@ app.delete('/api/reservations/:id', async (req, res) => {
 // WEEKLY SCHEDULE
 // --------------------------------------------------
 
-app.get('/api/schedule/weekly', async (req, res) => {
+app.get('/api/schedule/weekly', requireAdmin, async (req, res) => {
   try {
     const {
       appointment_type,
@@ -631,7 +694,7 @@ app.get('/api/schedule/weekly', async (req, res) => {
 })
 
 
-app.put('/api/schedule/weekly', async (req, res) => {
+app.put('/api/schedule/weekly', requireAdmin, async (req, res) => {
   try {
     const {
       appointment_type,
@@ -709,7 +772,7 @@ app.put('/api/schedule/weekly', async (req, res) => {
 // SPECIAL DATE SCHEDULE
 // --------------------------------------------------
 
-app.get('/api/schedule/date', async (req, res) => {
+app.get('/api/schedule/date', requireAdmin, async (req, res) => {
   try {
     const {
       date,
@@ -771,7 +834,7 @@ app.get('/api/schedule/date', async (req, res) => {
 })
 
 
-app.put('/api/schedule/date', async (req, res) => {
+app.put('/api/schedule/date', requireAdmin, async (req, res) => {
   try {
     const {
       appointment_type,
